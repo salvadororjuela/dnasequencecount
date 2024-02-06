@@ -1,51 +1,103 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""
+If you run this app in conda environment follow this tutorial
+Also, this application is run under Github spaces.
+https://docs.streamlit.io/get-started/installation/community-cloud
+"""
 
-import streamlit as st
-from streamlit.logger import get_logger
+import pandas as pd
+import streamlit as st 
+# Library for graphs
+import altair as alt
+# To display the logo
+from PIL import Image
 
-LOGGER = get_logger(__name__)
+# Logo image
+image = Image.open("dna-logo.jpg")
 
+# Display the image by allowing the image to expand the column width
+st.image(image, use_column_width=True)
 
-def run():
-    st.set_page_config(
-        page_title="Hello",
-        page_icon="👋",
-    )
+# Header of the application on the website
+# the three *** display and hr
+st.write("""
+    # DNA Nucleotide Count Web App
+    This app counts the nucleotide composition of query DNA!     
+         
+    ***
+""")
 
-    st.write("# Welcome to Streamlit! 👋")
+################################
+# Input Tex Box
+################################
 
-    st.sidebar.success("Select a demo above.")
+st.header("Enter DNA sequence")
 
-    st.markdown(
-        """
-        Streamlit is an open-source app framework built specifically for
-        Machine Learning and Data Science projects.
-        **👈 Select a demo from the sidebar** to see some examples
-        of what Streamlit can do!
-        ### Want to learn more?
-        - Check out [streamlit.io](https://streamlit.io)
-        - Jump into our [documentation](https://docs.streamlit.io)
-        - Ask a question in our [community
-          forums](https://discuss.streamlit.io)
-        ### See more complex demos
-        - Use a neural net to [analyze the Udacity Self-driving Car Image
-          Dataset](https://github.com/streamlit/demo-self-driving)
-        - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
-    """
-    )
+# Sample DNA sequence
+sequence_input = ">DNA Query 2\nGAACACGTGGAGGCAAACAGGAAGGTGAAGAAGAACTTATCCTATCAGGACGGAAGGTCCTGTGCTCGGG\nATCTTCCAGACGTCGCGACTCTAAATTGCCCCCTCTGAGGTCAAGGAACACAAGATGGTTTTGGAAATGC\nTGAACCCGATACATTATAACATCACCAGCATCGTGCCTGAAGCCATGCCTGCTGCCACCATGCCAGTCCT"
 
+# Content of the text area and height to display
+sequence = st.text_area("Sequence Input", sequence_input, height=250)
+# Split lines on each \n
+sequence = sequence.splitlines()
+# Read from line in the index 1 onwards. We don't use index 0
+sequence = sequence[1: ] # Skips the sequence name (first line)
+sequence = "".join(sequence) # Concatenates lists to string and removes spaces between each line
 
-if __name__ == "__main__":
-    run()
+st.write("""
+***
+""")
+
+# Prints the input DNA sequence 
+st.header("INPUT (DNA query)")
+sequence
+
+# DNA nucleotide count
+st.header("OUTPUT (DNA Nucleotide Count)")
+
+### 1. Print Dictionary
+st.subheader("1.Print dictionary")
+def DNA_nucleotide_count(seq):
+    d = dict([
+        # Use the .count to count each occurrence
+        ("A", seq.count("A")),
+        ("T", seq.count("T")),
+        ("G", seq.count("G")),
+        ("C", seq.count("C")),
+    ])
+
+    return d
+
+X = DNA_nucleotide_count(sequence)
+
+X
+
+### 2. Print Text
+st.subheader("2. Print text")
+st.write('There are  ' + str(X['A']) + ' adenine (A)')
+st.write('There are  ' + str(X['T']) + ' thymine (T)')
+st.write('There are  ' + str(X['G']) + ' guanine (G)')
+st.write('There are  ' + str(X['C']) + ' cytosine (C)')
+
+### 3. Display Data frame
+st.subheader("3. Display DataFrame")
+df = pd.DataFrame.from_dict(X, orient="index")
+df
+# Rename the column 0 to count
+df = df.rename({0: "count"}, axis="columns")
+# Reset the index
+df.reset_index(inplace=True)
+df = df.rename(columns = {"index": "nucleotide"})
+st.write(df)
+
+# 4. Display Bar Chart using Altair
+st.subheader("4. Display Bar Chart")
+p = alt.Chart(df).mark_bar().encode(
+    x = "nucleotide",
+    y = "count"
+)
+
+p = p.properties(
+    width = alt.Step(80) # controls width of bar.
+)
+
+st.write(p)
